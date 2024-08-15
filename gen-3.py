@@ -2,7 +2,7 @@
 
 """
 将 3码或全码字合并到3码字 (的候选区里);
-根据 ./单字字频统计.txt 和 ./多音字.txt 来重写了优先级.
+根据 ./cn_dicts/8105.dict.yaml 来重写了优先级.
 (也包含了只有一简字或二简字的字, 通过 ./flypy_plus.txt 获取了其全码数据.)
 """
 
@@ -11,24 +11,20 @@ import sys
 import subprocess
 
 
-all_chars = []
-with open('单字字频统计.txt') as f:
-    for line in f.readlines():
-        line = line.rstrip("\n")
-        if line.startswith('#') or len(line) != 1:
-            continue
-        all_chars.append(line)
-
-multiple_pinyin = {}
-with open('多音字.txt') as f:
+all_chars_with_pinyin = {}
+with open('./cn_dicts/8105.dict.yaml') as f:
     for line in f.readlines():
         line = line.rstrip("\n")
         if line.startswith('#') or len(line) < 1:
             continue
-        l = line.split(' ')
-        # l[2] 可能存在, 是一简码或二简码多音字的信息, 忽略.
-        code, words = l[0], l[1]
-        multiple_pinyin[code] = words
+        arr = re.match('^([^\t]+)\t([a-z]+)\t([0-9]+)$', line)
+        if not arr:
+            continue
+        [ch, pinyin, freq] = arr.groups()
+        freq = int(freq)
+        if ch not in all_chars_with_pinyin:
+            all_chars_with_pinyin[ch] = {}
+        all_chars_with_pinyin[ch][pinyin] = freq
 
 
 used_code = {}
@@ -65,30 +61,12 @@ class LastPrefix:
     def finish(self):
         prefix = self.prefix
 
-        if prefix in multiple_pinyin:
-            words = [i for i in multiple_pinyin[prefix]]
-            for ch in self.chars:
-                # 二简码不在 多音字.txt 对应读音数据里.
-                if ch not in words:
-                    words.insert(min(len(words), 2), ch)
-            code = prefix
-            for seq, ch in used_code.get(code, {}).items():
-                if ch in words[:]:
-                    words.remove(ch)
-            seq = 0
-            for ch in words:
-                seq += 1
-                while ch_fixed := used_code.get(code, {}).get(str(seq)):
-                    print(f'{prefix},{seq}={ch_fixed}')
-                    seq += 1
-                print(f'{prefix},{seq}={ch}')
-            return
-
         def get_index(ch):
             # 返回列表: 列表第一个元素表示是否存在, 第二个元素表示权重.
             # 2个值越小, 表示权重越高.
-            if ch in all_chars:
-                return [0, all_chars.index(ch)]
+            pinyin = prefix[:2]
+            if ch in all_chars_with_pinyin and pinyin in all_chars_with_pinyin[ch]:
+                return [0, -1 * all_chars_with_pinyin[ch][pinyin]]
             else:
                 # 这里使用 ch, 是为了让排序是稳定的 (即每次执行程序的结果是一样的).
                 return [1, ch]

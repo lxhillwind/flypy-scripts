@@ -2,14 +2,9 @@
 
 <hr />
 
-- 单字字频统计.txt
+- cn_dicts/8105.dict.yaml
 
-文件头:
-
-```
-# 下载之后, 需要仅保留汉字;
-# Sh -r curl -s https://raw.githubusercontent.com/argb/hanzi-data/master/%E7%8E%B0%E4%BB%A3%E6%B1%89%E8%AF%AD%E6%B1%89%E5%AD%97%E9%A2%91%E7%8E%87%E8%A1%A8.csv
-```
+来源于 <https://github.com/gaboolic/rime-frost> 仓库; 用作包含多音字的字频统计.
 
 <hr />
 
@@ -61,6 +56,7 @@
 <hr />
 
 - flypy_plus.txt
+- flypy_extra.txt
 
 文件来源: <https://github.com/OscarXWei/hesingle>
 

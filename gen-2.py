@@ -111,3 +111,13 @@ print('xy,1=迅')
 print('zj,1=暂')
 print('zr,1=赚')
 print('zy,1=尊')
+
+# 缺失二简码导致 gen-4.py 报错, 需要补上:
+print('eg,1=鞥')
+print('fn,1=覅')
+print('fv,1=猤')
+print('ki,1=怾')
+print('my,1=椧')
+print('ny,1=黁')
+print('ra,1=囕')
+print('sw,1=聓')

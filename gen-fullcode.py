@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-处理 ./搜狗拼音win版自定义短语.ini 和 flypy_plus.txt, 生成全码字 (seq 缺失).
+处理 ./搜狗拼音win版自定义短语.ini, flypy_plus.txt, flypy_extra.txt, 生成全码字 (seq 缺失).
 """
 
 import re
@@ -42,6 +42,18 @@ for line in additional_data:
     handle_line(line)
 
 with open('flypy_plus.txt') as f:
+    for line in f.readlines():
+        line = line.strip()
+        if line.startswith('#') or not line:
+            continue
+        ch, code = re.split('[\t ]', line)
+
+        i = (code, -1, ch)
+        print(f'{i[0]},{i[1]}={i[2]}')
+
+# 2024-08-15: 加入对 flypy_extra.txt 的处理;
+# 注意, 这天将字频 / 多音字的处理改成从 rime-ice / rime-frost 获取元信息.
+with open('flypy_extra.txt') as f:
     for line in f.readlines():
         line = line.strip()
         if line.startswith('#') or not line:
