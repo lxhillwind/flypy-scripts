@@ -47,6 +47,8 @@ with open('flypy_plus.txt') as f:
         if line.startswith('#') or not line:
             continue
         ch, code = re.split('[\t ]', line)
+        if len(code) < 3:
+            continue
 
         i = (code, -1, ch)
         print(f'{i[0]},{i[1]}={i[2]}')
@@ -59,6 +61,8 @@ with open('flypy_extra.txt') as f:
         if line.startswith('#') or not line:
             continue
         ch, code = re.split('[\t ]', line)
+        if len(code) < 3:
+            continue
 
         i = (code, -1, ch)
         print(f'{i[0]},{i[1]}={i[2]}')
