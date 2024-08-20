@@ -2,29 +2,47 @@
 
 """
 将 3码或全码字合并到3码字 (的候选区里);
-根据 ./cn_dicts/8105.dict.yaml 来重写了优先级.
+根据 ./单字字频统计.txt 和 ./多音字.txt 来重写了优先级.
 (也包含了只有一简字或二简字的字, 通过 ./flypy_plus.txt 获取了其全码数据.)
 """
 
 import re
 import sys
 import subprocess
+from copy import copy
+from functools import partial
 
 
-all_chars_with_pinyin = {}
-with open('./cn_dicts/8105.dict.yaml') as f:
+all_chars = []
+with open('单字字频统计.txt') as f:
+    for line in f.readlines():
+        line = line.rstrip("\n")
+        if line.startswith('#') or len(line) != 1:
+            continue
+        all_chars.append(line)
+
+ch_8105 = {}
+with open('cn_dicts/8105.dict.yaml') as f:
+    for line in f.readlines():
+        line = line.rstrip("\n")
+        arr = re.match('^([^\t]+)\t([a-z]+)\t?([0-9]*)$', line)
+        if not arr:
+            continue
+        ch, pinyin, _ = arr.groups()
+        if pinyin not in ch_8105:
+            ch_8105[pinyin] = []
+        ch_8105[pinyin].append(ch)
+
+multiple_pinyin = {}
+with open('多音字.txt') as f:
     for line in f.readlines():
         line = line.rstrip("\n")
         if line.startswith('#') or len(line) < 1:
             continue
-        arr = re.match('^([^\t]+)\t([a-z]+)\t([0-9]+)$', line)
-        if not arr:
-            continue
-        [ch, pinyin, freq] = arr.groups()
-        freq = int(freq)
-        if ch not in all_chars_with_pinyin:
-            all_chars_with_pinyin[ch] = {}
-        all_chars_with_pinyin[ch][pinyin] = freq
+        l = line.split(' ')
+        # l[2] 可能存在, 是一简码或二简码多音字的信息, 忽略.
+        code, words = l[0], l[1]
+        multiple_pinyin[code] = words
 
 
 used_code = {}
@@ -46,6 +64,7 @@ with open('./fixed-encoding.txt') as f:
 
 # 二简码能直接打出来的字;
 all_codes_2 = {}
+all_chars_2 = []
 
 prefix_added = {}
 
@@ -61,18 +80,48 @@ class LastPrefix:
     def finish(self):
         prefix = self.prefix
 
-        def get_index(ch):
+        if prefix in multiple_pinyin:
+            words = [i for i in multiple_pinyin[prefix]]
+            for ch in self.chars:
+                # 二简码不在 多音字.txt 对应读音数据里.
+                # 但是也需要检测它是不是二简码.
+                if ch not in words:
+                    if ch in all_chars_2:
+                        words.insert(min(len(words), 2), ch)
+                    else:
+                        words.append(ch)
+            code = prefix
+            for seq, ch in used_code.get(code, {}).items():
+                if ch in words[:]:
+                    words.remove(ch)
+            seq = 0
+            for ch in words:
+                seq += 1
+                while ch_fixed := used_code.get(code, {}).get(str(seq)):
+                    print(f'{prefix},{seq}={ch_fixed}')
+                    seq += 1
+                print(f'{prefix},{seq}={ch}')
+            return
+
+        def get_index(chars, ch):
             # 返回列表: 列表第一个元素表示是否存在, 第二个元素表示权重.
             # 2个值越小, 表示权重越高.
+            level = 0
             pinyin = prefix[:2]
-            if ch in all_chars_with_pinyin and pinyin in all_chars_with_pinyin[ch]:
-                return [0, -1 * all_chars_with_pinyin[ch][pinyin]]
+            if ch not in ch_8105.get(pinyin, []):
+                level = 1
+            if ch in all_chars:
+                return [0, level, all_chars.index(ch)]
             else:
-                # 这里使用 ch, 是为了让排序是稳定的 (即每次执行程序的结果是一样的).
-                return [1, ch]
-        # 先去重再排序
-        self.chars = list(set(self.chars))
-        self.chars.sort(key=get_index)
+                # 尽量保持在字表中出现的顺序
+                return [1, level, chars.index(ch)]
+        # 先去重再排序; 注意不使用 list(set(xxx)), 是为了保证原本 list 中的顺序; (?)
+        t = []
+        for i in self.chars:
+            if i not in t:
+                t.append(i)
+        self.chars = t
+        self.chars.sort(key=partial(get_index, copy(self.chars)))
 
         ch_1, ch_2 = None, None
         # 将二简码中排在首选和次选的字, 从三简码中往后挪.
@@ -127,13 +176,18 @@ if True: # keep indent with last version of this file.
             if code not in all_codes_2:
                 all_codes_2[code] = {}
             all_codes_2[code][seq] = ch
+            all_chars_2.append(ch)
 
 
 # main
 last_prefix = None
-res = subprocess.run('{ python3 ./gen-fullcode.py; } | sort', shell=True, text=True, capture_output=True)
+res = subprocess.run('{ python3 ./gen-fullcode.py; }', shell=True, text=True, capture_output=True)
 if True: # keep indent with last version of this file.
-    for line in res.stdout.split('\n'):
+    stdout = res.stdout.split('\n')
+    def f_sort(s):
+        return s[:3]
+    stdout.sort(key=f_sort)
+    for line in stdout:
         line = line.rstrip("\n")
         if not line or re.match('^[;#]', line):
             continue
