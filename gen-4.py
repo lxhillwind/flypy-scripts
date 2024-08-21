@@ -71,7 +71,7 @@ class LastPrefix:
         # 如果对应二简码 / 三简码中排在首位或次位, 则直接从全码中移除;
         prefix_2 = prefix[:2]
         for ch in self.chars[:]:
-            if ch == all_codes_2[prefix_2].get('1') or ch == all_codes_2[prefix_2].get('2'):
+            if ch == all_codes_2.get(prefix_2, {}).get('1') or ch == all_codes_2.get(prefix_2, {}).get('2'):
                 self.chars.remove(ch)
         prefix_3 = prefix[:3]
         for ch in self.chars[:]:

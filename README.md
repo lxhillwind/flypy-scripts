@@ -20,6 +20,12 @@
 
 <hr />
 
+- libre-flypy.txt
+
+来源于 <https://github.com/OverflowCat/libre-flypy> 仓库; 用作鹤形编码的补充.
+
+<hr />
+
 - 鹤形辅助码.txt
 
 文件头:

@@ -7,6 +7,9 @@
 import re
 
 
+flypy_chars = set()
+
+
 additional_data = r'''
 # 只有一简码或者二简码
 keue,-1=克
@@ -32,6 +35,7 @@ def handle_line(line):
         return
     i = (code, seq, ch)
     print(f'{i[0]},{i[1]}={i[2]}')
+    flypy_chars.add(ch)
 
 
 with open('搜狗拼音win版自定义短语.ini') as f:
@@ -52,6 +56,7 @@ with open('flypy_plus.txt') as f:
 
         i = (code, -1, ch)
         print(f'{i[0]},{i[1]}={i[2]}')
+        flypy_chars.add(ch)
 
 # 2024-08-15: 加入对 flypy_extra.txt 的处理;
 # 注意, 这天将字频 / 多音字的处理改成从 rime-ice / rime-frost 获取元信息.
@@ -66,3 +71,21 @@ with open('flypy_extra.txt') as f:
 
         i = (code, -1, ch)
         print(f'{i[0]},{i[1]}={i[2]}')
+        flypy_chars.add(ch)
+
+
+# 2024-08-21: 加入对 libre-flypy.txt 的处理;
+# 以 flypy_plus / flypy_extra 为准, 因此引入变量 flypy_chars.
+with open('libre-flypy.txt') as f:
+    for line in f.readlines():
+        line = line.strip()
+        arr = re.match('^(.)\t([a-z]+)$', line)
+        if not arr:
+            continue
+        ch, code = arr.groups()
+        if len(code) < 3:
+            continue
+
+        i = (code, -1, ch)
+        if ch not in flypy_chars:
+            print(f'{i[0]},{i[1]}={i[2]}')
